@@ -29,7 +29,7 @@ interface ChatMessage {
   parts: [{ text: string }];
 }
 
-// Define types for resume analysis response (adjust based on your `uploadResume` return type)
+// Define types for resume analysis response
 interface ResumeAnalysis {
   atsScore: string;
   recommendations: string[];
@@ -46,15 +46,16 @@ interface ResumeAnalysis {
 
 export default function AtsScoreSection() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null); // Ref for chat container
   const host = "http://localhost:5000";
   const streamUrl = `${host}/chat`;
 
-  // State with explicit types
+  // State declarations
   const [file, setFile] = useState<File | null>(null);
   const [data, setData] = useState<ChatMessage[]>([]);
   const [answer, setAnswer] = useState<string>("");
   const [streamdiv, showStreamdiv] = useState<boolean>(false);
-  const [toggled] = useState<boolean>(true); // Fixed to streaming, remove if toggle needed
+  const [toggled] = useState<boolean>(true); // Fixed to streaming
   const [waiting, setWaiting] = useState<boolean>(false);
   const [score, setScore] = useState<number | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
@@ -67,15 +68,14 @@ export default function AtsScoreSection() {
   const [softSkills, setSoftSkills] = useState<number | null>(null);
   const [technicalSkill, setTechnicalSkill] = useState<number | null>(null);
 
-  // Scroll to latest message (memoized)
-  const executeScroll = useCallback(() => {
-    const element = document.getElementById("checkpoint");
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
+  // Scroll to the latest response within the chat container
+  const scrollToLatest = useCallback(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, []);
 
-  // Validate input (memoized)
+  // Validation check
   const validationCheck = useCallback((str: string): boolean => {
     return !str || /^\s*$/.test(str);
   }, []);
@@ -95,7 +95,6 @@ export default function AtsScoreSection() {
       const response = await uploadResume(file);
       const { finalData } = response as { finalData: ResumeAnalysis };
 
-      // Update all states in one go
       setScore(parseInt(finalData.atsScore, 10));
       setSuggestions(finalData.recommendations);
       setKeywords(finalData.keywordsFound);
@@ -106,7 +105,6 @@ export default function AtsScoreSection() {
       setSoftSkills(finalData.keywordRelevance.softSkills);
       setTechnicalSkill(finalData.keywordRelevance.technicalSkills);
 
-      // Add initial assistant message
       setData((prev) => [
         ...prev,
         {
@@ -122,7 +120,7 @@ export default function AtsScoreSection() {
       console.error("Upload error:", error);
     } finally {
       setIsAnalyzing(false);
-      executeScroll();
+      scrollToLatest(); // Scroll to latest after upload
     }
   };
 
@@ -136,9 +134,9 @@ export default function AtsScoreSection() {
     handleStreamingChat();
   };
 
-  // Streaming chat logic
+  // Streaming chat logic with no-file check
   const handleStreamingChat = async () => {
-    const message = inputRef.current!.value; // Non-null assertion since validated
+    const message = inputRef.current!.value;
     const chatData = {
       chat: message,
       history: data,
@@ -158,8 +156,32 @@ export default function AtsScoreSection() {
       setWaiting(true);
       showStreamdiv(true);
     });
-    executeScroll();
+    scrollToLatest(); // Scroll to latest after user message
 
+    // Check if a file has been uploaded
+    if (!file) {
+      const noFileResponse: ChatMessage[] = [
+        ...ndata,
+        {
+          role: "model",
+          parts: [
+            { text: "Please upload your resume first so I can assist you better!" },
+          ],
+        },
+      ];
+      flushSync(() => {
+        setData(noFileResponse);
+        if (inputRef.current) {
+          inputRef.current.placeholder = "Ask about your resume...";
+        }
+        setWaiting(false);
+        showStreamdiv(false);
+      });
+      scrollToLatest();
+      return; // Exit the function early
+    }
+
+    // Proceed with backend call if file exists
     const headerConfig = {
       Accept: "application/json, text/plain, */*",
       "Content-Type": "application/json",
@@ -189,7 +211,7 @@ export default function AtsScoreSection() {
           setAnswer((prev) => prev + chunk);
         });
         modelResponse += chunk;
-        executeScroll();
+        scrollToLatest(); // Scroll during streaming
       }
     } catch (err) {
       modelResponse = `Error occurred: ${err instanceof Error ? err.message : "Unknown error"}`;
@@ -208,10 +230,11 @@ export default function AtsScoreSection() {
         setWaiting(false);
         showStreamdiv(false);
       });
-      executeScroll();
+      scrollToLatest(); // Scroll after model response
     }
   };
 
+  // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
@@ -222,13 +245,16 @@ export default function AtsScoreSection() {
     visible: { y: 0, opacity: 1 },
   };
 
-  // Extracted ConversationDisplayArea component
+  // Conversation display component
   const ConversationDisplayArea: React.FC<{
     data: ChatMessage[];
     streamdiv: boolean;
     answer: string;
   }> = ({ data, streamdiv, answer }) => (
-    <div className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2">
+    <div
+      ref={chatContainerRef}
+      className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2"
+    >
       {data.length === 0 ? (
         <div className="text-center text-muted-foreground py-4">
           Hello! I can answer questions about your resume and provide suggestions for improvement. Upload your resume to get started.
@@ -256,7 +282,6 @@ export default function AtsScoreSection() {
           </div>
         </div>
       )}
-      <span id="checkpoint" />
     </div>
   );
 

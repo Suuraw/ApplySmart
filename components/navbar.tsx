@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"; // Import useRouter for navigation
+
 import Link from "next/link"
 import { ModeToggle } from "./mode-toggle"
 import { Menu, X } from "lucide-react"
@@ -10,7 +12,7 @@ import { cn } from "@/lib/utils"
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-
+  const router=useRouter();
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10)
