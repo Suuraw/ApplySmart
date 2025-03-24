@@ -1,133 +1,264 @@
-"use client"
+"use client";
 
-import type React from "react"
+import React, { useState, useRef, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { flushSync } from "react-dom";
+import {
+  FileUp,
+  Send,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  MessageSquare,
+  BarChart,
+  FileText,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import { uploadResume } from "@/services/getAtsScore";
+import Markdown from "react-markdown";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Progress } from "@/components/ui/progress"
-import { Textarea } from "@/components/ui/textarea"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { FileUp, Send, CheckCircle, XCircle, AlertCircle, MessageSquare, BarChart, FileText } from "lucide-react"
-import { motion } from "framer-motion"
+// Define types for chat history
+interface ChatMessage {
+  role: "user" | "model";
+  parts: [{ text: string }];
+}
+
+// Define types for resume analysis response (adjust based on your `uploadResume` return type)
+interface ResumeAnalysis {
+  atsScore: string;
+  recommendations: string[];
+  keywordsFound: string[];
+  strengths: string[];
+  areasToImprove: string[];
+  suggestedKeywords: string[];
+  keywordRelevance: {
+    industryRelevance: string;
+    softSkills: number;
+    technicalSkills: number;
+  };
+}
 
 export default function AtsScoreSection() {
-  const [file, setFile] = useState<File | null>(null)
-  const [chatMessage, setChatMessage] = useState("")
-  const [chatHistory, setChatHistory] = useState<Array<{ role: "user" | "assistant"; content: string }>>([
-    {
-      role: "assistant",
-      content:
-        "Hello! I can answer questions about your resume and provide suggestions for improvement. Upload your resume to get started.",
-    },
-  ])
-  const [score, setScore] = useState<number | null>(null)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [suggestions, setSuggestions] = useState<string[]>([])
-  const [keywords, setKeywords] = useState<string[]>([])
-  const [strengths, setStrengths] = useState<string[]>([])
-  const [weaknesses, setWeaknesses] = useState<string[]>([])
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const host = "http://localhost:5000";
+  const streamUrl = `${host}/chat`;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0])
+  // State with explicit types
+  const [file, setFile] = useState<File | null>(null);
+  const [data, setData] = useState<ChatMessage[]>([]);
+  const [answer, setAnswer] = useState<string>("");
+  const [streamdiv, showStreamdiv] = useState<boolean>(false);
+  const [toggled] = useState<boolean>(true); // Fixed to streaming, remove if toggle needed
+  const [waiting, setWaiting] = useState<boolean>(false);
+  const [score, setScore] = useState<number | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [keywords, setKeywords] = useState<string[]>([]);
+  const [suggestedKeywords, setSuggestedKeywords] = useState<string[]>([]);
+  const [strengths, setStrengths] = useState<string[]>([]);
+  const [weaknesses, setWeaknesses] = useState<string[]>([]);
+  const [industryRelevance, setIndustryRelevance] = useState<number | null>(null);
+  const [softSkills, setSoftSkills] = useState<number | null>(null);
+  const [technicalSkill, setTechnicalSkill] = useState<number | null>(null);
+
+  // Scroll to latest message (memoized)
+  const executeScroll = useCallback(() => {
+    const element = document.getElementById("checkpoint");
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
     }
-  }
+  }, []);
 
-  const handleUpload = () => {
-    if (!file) return
+  // Validate input (memoized)
+  const validationCheck = useCallback((str: string): boolean => {
+    return !str || /^\s*$/.test(str);
+  }, []);
 
-    setIsAnalyzing(true)
+  // Handle file change
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0] ?? null;
+    setFile(selectedFile);
+  };
 
-    // Simulate analysis
-    setTimeout(() => {
-      setScore(78)
-      setSuggestions([
-        "Add more quantifiable achievements to highlight your impact",
-        "Include relevant industry keywords like 'data analysis' and 'project management'",
-        "Improve formatting for better readability by ATS systems",
-        "Add a skills section with technical and soft skills",
-      ])
-      setKeywords([
-        "Project Management",
-        "Data Analysis",
-        "Team Leadership",
-        "Strategic Planning",
-        "Customer Relations",
-      ])
-      setStrengths([
-        "Clear work history with dates and responsibilities",
-        "Good education section with relevant degrees",
-        "Contact information is complete and professional",
-      ])
-      setWeaknesses([
-        "Missing important keywords for target industry",
-        "Too many graphics and complex formatting",
-        "Skills section needs more technical competencies",
-      ])
-      setIsAnalyzing(false)
+  // Handle resume upload
+  const handleUpload = async () => {
+    if (!file) return;
 
-      // Add a system message to the chat
-      setChatHistory((prev) => [
+    setIsAnalyzing(true);
+    try {
+      const response = await uploadResume(file);
+      const { finalData } = response as { finalData: ResumeAnalysis };
+
+      // Update all states in one go
+      setScore(parseInt(finalData.atsScore, 10));
+      setSuggestions(finalData.recommendations);
+      setKeywords(finalData.keywordsFound);
+      setStrengths(finalData.strengths);
+      setWeaknesses(finalData.areasToImprove);
+      setSuggestedKeywords(finalData.suggestedKeywords);
+      setIndustryRelevance(parseInt(finalData.keywordRelevance.industryRelevance, 10));
+      setSoftSkills(finalData.keywordRelevance.softSkills);
+      setTechnicalSkill(finalData.keywordRelevance.technicalSkills);
+
+      // Add initial assistant message
+      setData((prev) => [
         ...prev,
         {
-          role: "assistant",
-          content:
-            "I've analyzed your resume! Your ATS score is 78/100. Ask me specific questions about how to improve it or what areas need work.",
+          role: "model",
+          parts: [
+            {
+              text: `I've analyzed your resume! Your ATS score is ${finalData.atsScore}/100. Ask me specific questions about how to improve it or what areas need work.`,
+            },
+          ],
         },
-      ])
-    }, 2500)
-  }
+      ]);
+    } catch (error) {
+      console.error("Upload error:", error);
+    } finally {
+      setIsAnalyzing(false);
+      executeScroll();
+    }
+  };
 
+  // Handle chat submission
   const handleSendMessage = () => {
-    if (!chatMessage.trim()) return
+    const message = inputRef.current?.value;
+    if (message && validationCheck(message)) {
+      console.log("Empty or invalid entry");
+      return;
+    }
+    handleStreamingChat();
+  };
 
-    // Add user message to chat
-    setChatHistory((prev) => [...prev, { role: "user", content: chatMessage }])
+  // Streaming chat logic
+  const handleStreamingChat = async () => {
+    const message = inputRef.current!.value; // Non-null assertion since validated
+    const chatData = {
+      chat: message,
+      history: data,
+    };
 
-    // Simulate AI response
-    setTimeout(() => {
-      let response = ""
+    const ndata: ChatMessage[] = [
+      ...data,
+      { role: "user", parts: [{ text: message }] },
+    ];
 
-      if (chatMessage.toLowerCase().includes("keyword")) {
-        response =
-          "Based on your resume, I recommend adding these keywords: 'data visualization', 'agile methodology', 'stakeholder management', and 'business intelligence'. These are commonly sought after in your industry."
-      } else if (chatMessage.toLowerCase().includes("format")) {
-        response =
-          "Your resume format could be improved by using a single-column layout, removing tables and graphics, and ensuring all text is selectable. This will help ATS systems parse your information correctly."
-      } else if (chatMessage.toLowerCase().includes("improve")) {
-        response =
-          "To improve your score, focus on adding more quantifiable achievements (e.g., 'increased sales by 20%'), using industry-specific terminology, and ensuring your skills section directly matches job descriptions you're targeting."
-      } else {
-        response =
-          "I'd be happy to help with that. Could you provide more specific details about what aspect of your resume you'd like me to address?"
+    flushSync(() => {
+      setData(ndata);
+      if (inputRef.current) {
+        inputRef.current.value = "";
+        inputRef.current.placeholder = "Waiting for model's response";
+      }
+      setWaiting(true);
+      showStreamdiv(true);
+    });
+    executeScroll();
+
+    const headerConfig = {
+      Accept: "application/json, text/plain, */*",
+      "Content-Type": "application/json",
+    };
+
+    let modelResponse = "";
+    try {
+      const response = await fetch(streamUrl, {
+        method: "POST",
+        headers: headerConfig,
+        body: JSON.stringify(chatData),
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error(response.statusText);
       }
 
-      setChatHistory((prev) => [...prev, { role: "assistant", content: response }])
-    }, 1000)
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
 
-    setChatMessage("")
-  }
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        flushSync(() => {
+          setAnswer((prev) => prev + chunk);
+        });
+        modelResponse += chunk;
+        executeScroll();
+      }
+    } catch (err) {
+      modelResponse = `Error occurred: ${err instanceof Error ? err.message : "Unknown error"}`;
+      console.error("Streaming error:", err);
+    } finally {
+      const updatedData: ChatMessage[] = [
+        ...ndata,
+        { role: "model", parts: [{ text: modelResponse.trim() || "No response received" }] },
+      ];
+      flushSync(() => {
+        setAnswer("");
+        setData(updatedData);
+        if (inputRef.current) {
+          inputRef.current.placeholder = "Ask about your resume...";
+        }
+        setWaiting(false);
+        showStreamdiv(false);
+      });
+      executeScroll();
+    }
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  }
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+  };
 
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-    },
-  }
+    visible: { y: 0, opacity: 1 },
+  };
+
+  // Extracted ConversationDisplayArea component
+  const ConversationDisplayArea: React.FC<{
+    data: ChatMessage[];
+    streamdiv: boolean;
+    answer: string;
+  }> = ({ data, streamdiv, answer }) => (
+    <div className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2">
+      {data.length === 0 ? (
+        <div className="text-center text-muted-foreground py-4">
+          Hello! I can answer questions about your resume and provide suggestions for improvement. Upload your resume to get started.
+        </div>
+      ) : (
+        data.map((element, index) => (
+          <div
+            key={index}
+            className={`flex ${element.role === "user" ? "justify-end" : "justify-start"}`}
+          >
+            <div
+              className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                element.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
+              }`}
+            >
+              <Markdown>{element.parts[0].text}</Markdown>
+            </div>
+          </div>
+        ))
+      )}
+      {streamdiv && (
+        <div className="flex justify-start">
+          <div className="max-w-[80%] rounded-lg px-4 py-2 bg-muted">
+            {answer ? <Markdown>{answer}</Markdown> : "Streaming..."}
+          </div>
+        </div>
+      )}
+      <span id="checkpoint" />
+    </div>
+  );
 
   return (
     <section id="ats-score" className="py-16 md:py-24 bg-muted/30">
@@ -146,8 +277,7 @@ export default function AtsScoreSection() {
             </span>
           </motion.h2>
           <motion.p variants={itemVariants} className="text-muted-foreground max-w-2xl mx-auto">
-            Upload your resume to get an ATS compatibility score, personalized suggestions, and chat with our AI
-            assistant for tailored advice.
+            Upload your resume to get an ATS compatibility score, personalized suggestions, and chat with our AI assistant for tailored advice.
           </motion.p>
         </motion.div>
 
@@ -175,17 +305,22 @@ export default function AtsScoreSection() {
                     accept=".pdf,.doc,.docx"
                     onChange={handleFileChange}
                   />
-                  <Label htmlFor="resume-upload" className="cursor-pointer flex flex-col items-center gap-2">
+                  <Label
+                    htmlFor="resume-upload"
+                    className="cursor-pointer flex flex-col items-center gap-2"
+                  >
                     <FileText className="h-10 w-10 text-muted-foreground/70" />
-                    <span className="text-sm font-medium">{file ? file.name : "Click to upload or drag and drop"}</span>
-                    <span className="text-xs text-muted-foreground">PDF, DOC, DOCX (Max 5MB)</span>
+                    <span className="text-sm font-medium">
+                      {file ? file.name : "Click to upload or drag and drop"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      PDF, DOC, DOCX (Max 5MB)
+                    </span>
                   </Label>
                 </div>
-
                 <Button onClick={handleUpload} className="w-full" disabled={!file || isAnalyzing}>
                   {isAnalyzing ? "Analyzing..." : "Analyze Resume"}
                 </Button>
-
                 {score !== null && (
                   <div className="mt-6 space-y-4">
                     <div className="text-center">
@@ -194,7 +329,11 @@ export default function AtsScoreSection() {
                         <div className="absolute inset-0 flex items-center justify-center">
                           <span className="text-4xl font-bold">{score}</span>
                         </div>
-                        <svg className="w-full h-full" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}>
+                        <svg
+                          className="w-full h-full"
+                          viewBox="0 0 100 100"
+                          style={{ transform: "rotate(-90deg)" }}
+                        >
                           <circle
                             cx="50"
                             cy="50"
@@ -222,8 +361,8 @@ export default function AtsScoreSection() {
                         {score >= 80
                           ? "Excellent! Your resume is ATS-friendly."
                           : score >= 60
-                            ? "Good, but there's room for improvement."
-                            : "Needs significant improvements for ATS."}
+                          ? "Good, but there's room for improvement."
+                          : "Needs significant improvements for ATS."}
                       </div>
                     </div>
                   </div>
@@ -258,36 +397,21 @@ export default function AtsScoreSection() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="h-[500px] flex flex-col">
-                    <div className="flex-1 overflow-y-auto mb-4 space-y-4 pr-2">
-                      {chatHistory.map((message, index) => (
-                        <div
-                          key={index}
-                          className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                        >
-                          <div
-                            className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                              message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
-                            }`}
-                          >
-                            {message.content}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    <ConversationDisplayArea data={data} streamdiv={streamdiv} answer={answer} />
                     <div className="flex gap-2">
                       <Textarea
+                        ref={inputRef}
                         placeholder="Ask about your resume..."
-                        value={chatMessage}
-                        onChange={(e) => setChatMessage(e.target.value)}
                         className="resize-none"
+                        disabled={waiting}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault()
-                            handleSendMessage()
+                            e.preventDefault();
+                            handleSendMessage();
                           }
                         }}
                       />
-                      <Button size="icon" onClick={handleSendMessage} disabled={!chatMessage.trim()}>
+                      <Button size="icon" onClick={handleSendMessage} disabled={waiting}>
                         <Send className="h-4 w-4" />
                       </Button>
                     </div>
@@ -317,14 +441,16 @@ export default function AtsScoreSection() {
                           </h3>
                           <ul className="space-y-2">
                             {strengths.map((strength, index) => (
-                              <li key={index} className="flex items-start gap-2 bg-green-500/10 p-3 rounded-md">
+                              <li
+                                key={index}
+                                className="flex items-start gap-2 bg-green-500/10 p-3 rounded-md"
+                              >
                                 <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
                                 <span>{strength}</span>
                               </li>
                             ))}
                           </ul>
                         </div>
-
                         <div>
                           <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
                             <XCircle className="h-5 w-5 text-red-500" />
@@ -332,14 +458,16 @@ export default function AtsScoreSection() {
                           </h3>
                           <ul className="space-y-2">
                             {weaknesses.map((weakness, index) => (
-                              <li key={index} className="flex items-start gap-2 bg-red-500/10 p-3 rounded-md">
+                              <li
+                                key={index}
+                                className="flex items-start gap-2 bg-red-500/10 p-3 rounded-md"
+                              >
                                 <XCircle className="h-5 w-5 text-red-500 mt-0.5 shrink-0" />
                                 <span>{weakness}</span>
                               </li>
                             ))}
                           </ul>
                         </div>
-
                         <div>
                           <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
                             <AlertCircle className="h-5 w-5 text-amber-500" />
@@ -347,7 +475,10 @@ export default function AtsScoreSection() {
                           </h3>
                           <ul className="space-y-2">
                             {suggestions.map((suggestion, index) => (
-                              <li key={index} className="flex items-start gap-2 bg-amber-500/10 p-3 rounded-md">
+                              <li
+                                key={index}
+                                className="flex items-start gap-2 bg-amber-500/10 p-3 rounded-md"
+                              >
                                 <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
                                 <span>{suggestion}</span>
                               </li>
@@ -376,7 +507,9 @@ export default function AtsScoreSection() {
                     ) : (
                       <div className="space-y-6">
                         <div>
-                          <h3 className="text-lg font-medium mb-4">Keywords Found in Your Resume</h3>
+                          <h3 className="text-lg font-medium mb-4">
+                            Keywords Found in Your Resume
+                          </h3>
                           <div className="flex flex-wrap gap-2">
                             {keywords.map((keyword, index) => (
                               <div
@@ -388,18 +521,12 @@ export default function AtsScoreSection() {
                             ))}
                           </div>
                         </div>
-
                         <div>
-                          <h3 className="text-lg font-medium mb-4">Suggested Keywords to Add</h3>
+                          <h3 className="text-lg font-medium mb-4">
+                            Suggested Keywords to Add
+                          </h3>
                           <div className="flex flex-wrap gap-2">
-                            {[
-                              "Data Visualization",
-                              "Agile Methodology",
-                              "Business Intelligence",
-                              "Stakeholder Management",
-                              "Process Optimization",
-                              "Cross-functional Collaboration",
-                            ].map((keyword, index) => (
+                            {suggestedKeywords.map((keyword, index) => (
                               <div
                                 key={index}
                                 className="bg-muted px-3 py-1 rounded-full text-sm font-medium border border-dashed border-primary/50"
@@ -409,30 +536,31 @@ export default function AtsScoreSection() {
                             ))}
                           </div>
                         </div>
-
                         <div>
-                          <h3 className="text-lg font-medium mb-3">Keyword Relevance</h3>
+                          <h3 className="text-lg font-medium mb-3">
+                            Keyword Relevance
+                          </h3>
                           <div className="space-y-4">
                             <div>
                               <div className="flex justify-between mb-1">
                                 <span className="text-sm">Industry Relevance</span>
-                                <span className="text-sm font-medium">65%</span>
+                                <span className="text-sm font-medium">{industryRelevance}%</span>
                               </div>
-                              <Progress value={65} className="h-2" />
+                              <Progress value={industryRelevance ?? 0} className="h-2" />
                             </div>
                             <div>
                               <div className="flex justify-between mb-1">
                                 <span className="text-sm">Technical Skills</span>
-                                <span className="text-sm font-medium">78%</span>
+                                <span className="text-sm font-medium">{technicalSkill}%</span>
                               </div>
-                              <Progress value={78} className="h-2" />
+                              <Progress value={technicalSkill ?? 0} className="h-2" />
                             </div>
                             <div>
                               <div className="flex justify-between mb-1">
                                 <span className="text-sm">Soft Skills</span>
-                                <span className="text-sm font-medium">82%</span>
+                                <span className="text-sm font-medium">{softSkills}%</span>
                               </div>
-                              <Progress value={82} className="h-2" />
+                              <Progress value={softSkills ?? 0} className="h-2" />
                             </div>
                           </div>
                         </div>
@@ -446,6 +574,5 @@ export default function AtsScoreSection() {
         </motion.div>
       </div>
     </section>
-  )
+  );
 }
-
