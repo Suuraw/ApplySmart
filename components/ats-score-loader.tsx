@@ -1,5 +1,8 @@
+"use client";
 import React, { useState, useEffect, useRef } from "react";
 import { motion, useAnimationControls } from "framer-motion";
+import { useTheme } from "next-themes";
+
 interface ATSScoreDashboardProps {
   score?: number;
   loading?: boolean;
@@ -14,11 +17,11 @@ const ATSScoreDashboard: React.FC<ATSScoreDashboardProps> = ({
   const [displayScore, setDisplayScore] = useState<number | null>(null);
   const controls = useAnimationControls();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  if (score || score == 0) {
+  const { resolvedTheme } = useTheme(); // Use resolvedTheme instead of theme
+
+  if (score || score === 0) {
     score = Math.abs(score - 100);
-    // console.log(score);
   }
-  console.log(score)
 
   const startAngle = 180;
   const endAngle = 0;
@@ -69,7 +72,7 @@ const ATSScoreDashboard: React.FC<ATSScoreDashboardProps> = ({
       const countUp = () => {
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        setDisplayScore(Math.floor(progress * score));
+        setDisplayScore(Math.floor(progress * score!));
 
         if (progress < 1) {
           requestAnimationFrame(countUp);
@@ -83,6 +86,8 @@ const ATSScoreDashboard: React.FC<ATSScoreDashboardProps> = ({
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [loading, score, controls, maxScore]);
+
+  const needleColor = resolvedTheme === "dark" ? "#ffffff" : "#1f2937";
 
   return (
     <div className="flex flex-col items-center justify-center w-full max-w-xs mx-auto">
@@ -129,14 +134,14 @@ const ATSScoreDashboard: React.FC<ATSScoreDashboardProps> = ({
                     y1={y1}
                     x2={x2}
                     y2={y2}
-                    stroke="#374151"
+                    stroke={needleColor}
                     strokeWidth="2"
                   />
                   <text
                     x={100 + 65 * Math.cos(rad)}
                     y={100 + 65 * Math.sin(rad)}
                     fontSize="10"
-                    fill="#374151"
+                    fill={needleColor}
                     textAnchor="middle"
                     dominantBaseline="middle"
                   >
@@ -146,14 +151,14 @@ const ATSScoreDashboard: React.FC<ATSScoreDashboardProps> = ({
               );
             })}
 
-            <circle cx="100" cy="100" r="8" fill="#1f2937" />
+            <circle cx="100" cy="100" r="8" fill={needleColor} />
 
             <motion.line
               x1="50"
               y1="100"
               x2="100"
               y2="100"
-              stroke="#1f2937"
+              stroke={needleColor}
               strokeWidth="3"
               strokeLinecap="round"
               initial={{
@@ -167,7 +172,11 @@ const ATSScoreDashboard: React.FC<ATSScoreDashboardProps> = ({
 
           <div className="absolute inset-0 flex flex-col items-center justify-end pb-4">
             <div className="text-4xl font-bold">
-              {displayScore == null ? displayScore : loading||score===100 ? "..." : 100-(score==undefined?0:score)}
+              {displayScore == null
+                ? displayScore
+                : loading || score === 100
+                ? "..."
+                : 100 - (score == undefined ? 0 : score)}
             </div>
             <div className="text-sm text-gray-500">ATS Score</div>
           </div>
