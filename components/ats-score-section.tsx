@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { flushSync } from "react-dom";
+import ATSScoreDashboard from "./ats-score-loader";
 import {
   FileUp,
   Send,
@@ -57,21 +58,24 @@ export default function AtsScoreSection() {
   const [streamdiv, showStreamdiv] = useState<boolean>(false);
   const [toggled] = useState<boolean>(true); // Fixed to streaming
   const [waiting, setWaiting] = useState<boolean>(false);
-  const [score, setScore] = useState<number | null>(null);
+  const [score, setScore] = useState<number>(0);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [keywords, setKeywords] = useState<string[]>([]);
   const [suggestedKeywords, setSuggestedKeywords] = useState<string[]>([]);
   const [strengths, setStrengths] = useState<string[]>([]);
   const [weaknesses, setWeaknesses] = useState<string[]>([]);
-  const [industryRelevance, setIndustryRelevance] = useState<number | null>(null);
+  const [industryRelevance, setIndustryRelevance] = useState<number | null>(
+    null
+  );
   const [softSkills, setSoftSkills] = useState<number | null>(null);
   const [technicalSkill, setTechnicalSkill] = useState<number | null>(null);
 
   // Scroll to the latest response within the chat container
   const scrollToLatest = useCallback(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
     }
   }, []);
 
@@ -101,7 +105,9 @@ export default function AtsScoreSection() {
       setStrengths(finalData.strengths);
       setWeaknesses(finalData.areasToImprove);
       setSuggestedKeywords(finalData.suggestedKeywords);
-      setIndustryRelevance(parseInt(finalData.keywordRelevance.industryRelevance, 10));
+      setIndustryRelevance(
+        parseInt(finalData.keywordRelevance.industryRelevance, 10)
+      );
       setSoftSkills(finalData.keywordRelevance.softSkills);
       setTechnicalSkill(finalData.keywordRelevance.technicalSkills);
 
@@ -165,7 +171,9 @@ export default function AtsScoreSection() {
         {
           role: "model",
           parts: [
-            { text: "Please upload your resume first so I can assist you better!" },
+            {
+              text: "Please upload your resume first so I can assist you better!",
+            },
           ],
         },
       ];
@@ -214,12 +222,17 @@ export default function AtsScoreSection() {
         scrollToLatest(); // Scroll during streaming
       }
     } catch (err) {
-      modelResponse = `Error occurred: ${err instanceof Error ? err.message : "Unknown error"}`;
+      modelResponse = `Error occurred: ${
+        err instanceof Error ? err.message : "Unknown error"
+      }`;
       console.error("Streaming error:", err);
     } finally {
       const updatedData: ChatMessage[] = [
         ...ndata,
-        { role: "model", parts: [{ text: modelResponse.trim() || "No response received" }] },
+        {
+          role: "model",
+          parts: [{ text: modelResponse.trim() || "No response received" }],
+        },
       ];
       flushSync(() => {
         setAnswer("");
@@ -257,17 +270,22 @@ export default function AtsScoreSection() {
     >
       {data.length === 0 ? (
         <div className="text-center text-muted-foreground py-4">
-          Hello! I can answer questions about your resume and provide suggestions for improvement. Upload your resume to get started.
+          Hello! I can answer questions about your resume and provide
+          suggestions for improvement. Upload your resume to get started.
         </div>
       ) : (
         data.map((element, index) => (
           <div
             key={index}
-            className={`flex ${element.role === "user" ? "justify-end" : "justify-start"}`}
+            className={`flex ${
+              element.role === "user" ? "justify-end" : "justify-start"
+            }`}
           >
             <div
               className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                element.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
+                element.role === "user"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted"
               }`}
             >
               <Markdown>{element.parts[0].text}</Markdown>
@@ -295,14 +313,21 @@ export default function AtsScoreSection() {
           variants={containerVariants}
           className="text-center mb-12"
         >
-          <motion.h2 variants={itemVariants} className="text-3xl md:text-4xl font-bold mb-4">
+          <motion.h2
+            variants={itemVariants}
+            className="text-3xl md:text-4xl font-bold mb-4"
+          >
             Optimize Your Resume for{" "}
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
               ATS Systems
             </span>
           </motion.h2>
-          <motion.p variants={itemVariants} className="text-muted-foreground max-w-2xl mx-auto">
-            Upload your resume to get an ATS compatibility score, personalized suggestions, and chat with our AI assistant for tailored advice.
+          <motion.p
+            variants={itemVariants}
+            className="text-muted-foreground max-w-2xl mx-auto"
+          >
+            Upload your resume to get an ATS compatibility score, personalized
+            suggestions, and chat with our AI assistant for tailored advice.
           </motion.p>
         </motion.div>
 
@@ -343,55 +368,16 @@ export default function AtsScoreSection() {
                     </span>
                   </Label>
                 </div>
-                <Button onClick={handleUpload} className="w-full" disabled={!file || isAnalyzing}>
+                <Button
+                  onClick={handleUpload}
+                  className="w-full"
+                  disabled={!file || isAnalyzing}
+                >
                   {isAnalyzing ? "Analyzing..." : "Analyze Resume"}
                 </Button>
-                {score !== null && (
-                  <div className="mt-6 space-y-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold mb-2">ATS Score</div>
-                      <div className="relative h-36 w-36 mx-auto">
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-4xl font-bold">{score}</span>
-                        </div>
-                        <svg
-                          className="w-full h-full"
-                          viewBox="0 0 100 100"
-                          style={{ transform: "rotate(-90deg)" }}
-                        >
-                          <circle
-                            cx="50"
-                            cy="50"
-                            r="45"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="10"
-                            strokeOpacity="0.1"
-                          />
-                          <circle
-                            cx="50"
-                            cy="50"
-                            r="45"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="10"
-                            className="text-primary"
-                            strokeDasharray={2 * Math.PI * 45}
-                            strokeDashoffset={2 * Math.PI * 45 * (1 - score / 100)}
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                      </div>
-                      <div className="text-sm text-muted-foreground mt-2">
-                        {score >= 80
-                          ? "Excellent! Your resume is ATS-friendly."
-                          : score >= 60
-                          ? "Good, but there's room for improvement."
-                          : "Needs significant improvements for ATS."}
-                      </div>
-                    </div>
-                  </div>
-                )}
+
+                <ATSScoreDashboard score={score} loading={isAnalyzing} />
+
               </CardContent>
             </Card>
           </motion.div>
@@ -403,11 +389,17 @@ export default function AtsScoreSection() {
                   <MessageSquare className="h-4 w-4" />
                   <span>Chat Assistant</span>
                 </TabsTrigger>
-                <TabsTrigger value="suggestions" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="suggestions"
+                  className="flex items-center gap-2"
+                >
                   <BarChart className="h-4 w-4" />
                   <span>Suggestions</span>
                 </TabsTrigger>
-                <TabsTrigger value="keywords" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="keywords"
+                  className="flex items-center gap-2"
+                >
                   <CheckCircle className="h-4 w-4" />
                   <span>Keywords</span>
                 </TabsTrigger>
@@ -422,7 +414,11 @@ export default function AtsScoreSection() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="h-[500px] flex flex-col">
-                    <ConversationDisplayArea data={data} streamdiv={streamdiv} answer={answer} />
+                    <ConversationDisplayArea
+                      data={data}
+                      streamdiv={streamdiv}
+                      answer={answer}
+                    />
                     <div className="flex gap-2">
                       <Textarea
                         ref={inputRef}
@@ -436,7 +432,11 @@ export default function AtsScoreSection() {
                           }
                         }}
                       />
-                      <Button size="icon" onClick={handleSendMessage} disabled={waiting}>
+                      <Button
+                        size="icon"
+                        onClick={handleSendMessage}
+                        disabled={waiting}
+                      >
                         <Send className="h-4 w-4" />
                       </Button>
                     </div>
@@ -568,24 +568,43 @@ export default function AtsScoreSection() {
                           <div className="space-y-4">
                             <div>
                               <div className="flex justify-between mb-1">
-                                <span className="text-sm">Industry Relevance</span>
-                                <span className="text-sm font-medium">{industryRelevance}%</span>
+                                <span className="text-sm">
+                                  Industry Relevance
+                                </span>
+                                <span className="text-sm font-medium">
+                                  {industryRelevance}%
+                                </span>
                               </div>
-                              <Progress value={industryRelevance ?? 0} className="h-2" />
+                              <Progress
+                                value={industryRelevance ?? 0}
+                                className="h-2"
+                              />
                             </div>
                             <div>
                               <div className="flex justify-between mb-1">
-                                <span className="text-sm">Technical Skills</span>
-                                <span className="text-sm font-medium">{technicalSkill}%</span>
+                                <span className="text-sm">
+                                  Technical Skills
+                                </span>
+                                <span className="text-sm font-medium">
+                                  {technicalSkill}%
+                                </span>
                               </div>
-                              <Progress value={technicalSkill ?? 0} className="h-2" />
+                              <Progress
+                                value={technicalSkill ?? 0}
+                                className="h-2"
+                              />
                             </div>
                             <div>
                               <div className="flex justify-between mb-1">
                                 <span className="text-sm">Soft Skills</span>
-                                <span className="text-sm font-medium">{softSkills}%</span>
+                                <span className="text-sm font-medium">
+                                  {softSkills}%
+                                </span>
                               </div>
-                              <Progress value={softSkills ?? 0} className="h-2" />
+                              <Progress
+                                value={softSkills ?? 0}
+                                className="h-2"
+                              />
                             </div>
                           </div>
                         </div>
