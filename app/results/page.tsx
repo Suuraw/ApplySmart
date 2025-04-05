@@ -1,12 +1,11 @@
-"use client";
+'use client';
 
-import type React from "react";
 import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation"; // Added useRouter
+import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Copy, Check, ArrowLeft } from "lucide-react"; // Added ArrowLeft icon
+import { Copy, Check, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 
 // Define the expected structure of the results data
@@ -17,49 +16,42 @@ interface ResultsData {
   formFields: Array<{ field: string; value: string }>;
 }
 
-export default function ResultsPage() {
+export default function ResultsClient() {
   const searchParams = useSearchParams();
-  const router = useRouter(); // Initialize router for navigation
+  const router = useRouter();
   const [results, setResults] = useState<ResultsData | null>(null);
   const [editableFields, setEditableFields] = useState<Array<{ field: string; value: string }>>([]);
-  const [copiedIndex, setCopiedIndex] = useState<number | null>(null); // Track which field was copied
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
-  // Extract and parse results data from query params when the page loads
   useEffect(() => {
     const data = searchParams.get("data");
     if (data) {
       try {
         const parsedData = JSON.parse(decodeURIComponent(data)) as ResultsData;
         setResults(parsedData);
-        setEditableFields(parsedData.formFields); // Initialize editable fields
+        setEditableFields(parsedData.formFields);
       } catch (error) {
         console.error("Failed to parse results data:", error);
       }
     }
   }, [searchParams]);
 
-  // Handle changes to form field values
   const handleFieldChange = (index: number, newValue: string) => {
     setEditableFields((prev) =>
       prev.map((field, i) => (i === index ? { ...field, value: newValue } : field))
     );
   };
 
-  // Copy text to clipboard and show green tick for 2 seconds
   const handleCopy = (text: string, index: number) => {
     navigator.clipboard.writeText(text);
-    setCopiedIndex(index); // Set the copied field index
-    setTimeout(() => {
-      setCopiedIndex(null); // Reset after 2 seconds
-    }, 2000);
+    setCopiedIndex(index);
+    setTimeout(() => setCopiedIndex(null), 2000);
   };
 
-  // Navigate back to the home page
   const handleBackToHome = () => {
-    router.push("/"); // Navigate to the home page
+    router.push("/");
   };
 
-  // Animation variants for hero section
   const containerVariants = {
     hidden: { opacity: 0, y: 50 },
     visible: {
@@ -96,7 +88,6 @@ export default function ResultsPage() {
           variants={containerVariants}
           className="max-w-6xl mx-auto"
         >
-          {/* Back Navigation Button */}
           <div className="mb-8">
             <Button
               variant="outline"
@@ -113,7 +104,6 @@ export default function ResultsPage() {
           </h1>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* ATS Score Section */}
             <motion.div variants={itemVariants}>
               <Card className="shadow-lg border border-primary/10">
                 <CardHeader>
@@ -129,15 +119,7 @@ export default function ResultsPage() {
                         <span className="text-5xl font-bold text-primary">{results.score}%</span>
                       </div>
                       <svg className="w-full h-full" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}>
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="45"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="10"
-                          strokeOpacity="0.1"
-                        />
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="10" strokeOpacity="0.1" />
                         <circle
                           cx="50"
                           cy="50"
@@ -166,10 +148,7 @@ export default function ResultsPage() {
                       <h3 className="text-md font-medium mb-2">Matched Skills</h3>
                       <div className="flex flex-wrap gap-2">
                         {results.matchedSkills.map((skill, index) => (
-                          <div
-                            key={index}
-                            className="bg-green-500/10 text-green-600 dark:text-green-400 px-3 py-1 rounded-full text-sm font-medium"
-                          >
+                          <div key={index} className="bg-green-500/10 text-green-600 dark:text-green-400 px-3 py-1 rounded-full text-sm font-medium">
                             {skill}
                           </div>
                         ))}
@@ -179,10 +158,7 @@ export default function ResultsPage() {
                       <h3 className="text-md font-medium mb-2">Missing Skills</h3>
                       <div className="flex flex-wrap gap-2">
                         {results.missingSkills.map((skill, index) => (
-                          <div
-                            key={index}
-                            className="bg-red-500/10 text-red-600 dark:text-red-400 px-3 py-1 rounded-full text-sm font-medium"
-                          >
+                          <div key={index} className="bg-red-500/10 text-red-600 dark:text-red-400 px-3 py-1 rounded-full text-sm font-medium">
                             {skill}
                           </div>
                         ))}
@@ -193,7 +169,6 @@ export default function ResultsPage() {
               </Card>
             </motion.div>
 
-            {/* Auto-filled Form Fields Section */}
             <motion.div variants={itemVariants}>
               <Card className="shadow-lg border border-primary/10">
                 <CardHeader>
