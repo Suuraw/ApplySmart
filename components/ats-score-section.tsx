@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { flushSync } from "react-dom";
 import ATSScoreDashboard from "./ats-score-loader";
+import { useAuthContext } from "@/hooks/authContext";
 import {
   FileUp,
   Send,
@@ -70,6 +71,7 @@ export default function AtsScoreSection() {
   );
   const [softSkills, setSoftSkills] = useState<number | null>(null);
   const [technicalSkill, setTechnicalSkill] = useState<number | null>(null);
+  const { isLoggedIn } = useAuthContext();
 
   // Scroll to the latest response within the chat container
   const scrollToLatest = useCallback(() => {
@@ -86,13 +88,16 @@ export default function AtsScoreSection() {
 
   // Handle file change
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    
+    if(!isLoggedIn) return;
     const selectedFile = e.target.files?.[0] ?? null;
     setFile(selectedFile);
   };
 
   // Handle resume upload
   const handleUpload = async () => {
-    if (!file) return;
+    console.log(isLoggedIn)
+    if (!file||!isLoggedIn) return;
 
     setIsAnalyzing(true);
     try {
@@ -348,13 +353,13 @@ export default function AtsScoreSection() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-6 text-center hover:bg-muted/50 transition-colors cursor-pointer">
-                  <Input
+                  {isLoggedIn&&(<Input
                     type="file"
                     id="resume-upload"
                     className="hidden"
                     accept=".pdf,.doc,.docx"
                     onChange={handleFileChange}
-                  />
+                  />)}
                   <Label
                     htmlFor="resume-upload"
                     className="cursor-pointer flex flex-col items-center gap-2"

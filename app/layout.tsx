@@ -4,7 +4,9 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import Navbar from "@/components/navbar"
-
+import GridBackground from "@/components/grid-background"
+import FloatingElements from "@/components/floating-elements"
+import { AuthProvider } from "@/hooks/authContext"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
@@ -28,10 +30,14 @@ export default function RootLayout({
           disableTransitionOnChange
           storageKey="ats-theme-preference"
         >
+          <AuthProvider>
+          <GridBackground />
+          <FloatingElements />
           <div className="bg-background text-foreground min-h-screen flex flex-col">
             <Navbar />
             {children}
           </div>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

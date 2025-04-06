@@ -5,6 +5,7 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
+    --background-rgb: 255, 255, 255;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
@@ -28,6 +29,7 @@
 
   .dark {
     --background: 240 10% 3.9%;
+    --background-rgb: 10, 10, 10;
     --foreground: 0 0% 98%;
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
@@ -87,5 +89,18 @@
 
 .animate-float {
   animation: float 3s ease-in-out infinite;
+}
+
+@keyframes grid-movement {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(50px);
+  }
+}
+
+.animate-grid-movement {
+  animation: grid-movement 20s linear infinite;
 }
 
