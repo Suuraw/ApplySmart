@@ -1,21 +1,26 @@
 "use client";
 import type React from "react";
 import { useState } from "react";
-import { useRouter } from "next/navigation"; // Import useRouter for navigation
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FileUp, LinkIcon, FileText, ArrowRight, Loader2, Clipboard, CheckCircle2 } from "lucide-react"; // Added Clipboard icon
+import { FileUp, LinkIcon, FileText, ArrowRight, Loader2, Clipboard, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { Switch } from "@/components/ui/switch"; // Import Switch component
+import axios from 'axios';
+
+const BACKEND_API = process.env.NEXT_PUBLIC_BACKEND_API;
 
 export default function JobFormSection() {
   const [resumeLink, setResumeLink] = useState("");
   const [jobDescriptionFile, setJobDescriptionFile] = useState<File | null>(null);
   const [jobDescriptionText, setJobDescriptionText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const router = useRouter(); // Initialize router
+  const [isPdfMode, setIsPdfMode] = useState(true); // New state for toggle
+  const router = useRouter();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -28,38 +33,64 @@ export default function JobFormSection() {
     alert("Copied to clipboard!"); // Optional feedback
   };
 
-  const handleProcess = () => {
-    if (!resumeLink || (!jobDescriptionFile && !jobDescriptionText.trim())) return;
+  const handleProcess = async () => {
+    if (!resumeLink || (!jobDescriptionFile && !jobDescriptionText.trim())) {
+      return;
+    }
 
     setIsProcessing(true);
 
-    // Simulate processing
-    setTimeout(() => {
-      const results = {
-        score: 85,
-        matchedSkills: [
-          "Project Management",
-          "Team Leadership",
-          "Strategic Planning",
-          "Data Analysis",
-          "Customer Relations",
-        ],
-        missingSkills: ["Python Programming", "SQL Database Management", "Agile Methodology"],
-        formFields: [
-          { field: "Full Name", value: "John Smith" },
-          { field: "Email", value: "john.smith@example.com" },
-          { field: "Phone", value: "(555) 123-4567" },
-          { field: "Current Position", value: "Senior Project Manager" },
-          { field: "Years of Experience", value: "8" },
-          { field: "Education", value: "MBA, Business Administration" },
-          { field: "Skills", value: "Project Management, Team Leadership, Strategic Planning, Data Analysis" },
-        ],
-      };
+    try {
+      // First, upload the job description PDF
+      const formData = new FormData();
+      formData.append("jobDoc", jobDescriptionFile);
+      
+      // Upload the job description PDF and get the formatted data
+      const jobDescResponse = await axios.post(`${BACKEND_API}/uploadDoc`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
 
-      // Redirect to results page with data
-      router.push(`/results?data=${encodeURIComponent(JSON.stringify(results))}`);
+      // Get the Google Form link from the job description
+      const linkResponse = await axios.get(`${BACKEND_API}/getJobLink`);
+      const formUrl = linkResponse.data.link;
+
+      // Take screenshot of the form and process it
+      await axios.post(`${BACKEND_API}/job_form`, { formUrl });
+
+      // Upload resume link - Modified to use resumeLink parameter
+      const resumeFormData = new FormData();
+      resumeFormData.append("resumeLink", resumeLink);
+      const resumeResponse = await axios.post(`${BACKEND_API}/upload`, resumeFormData, {
+        headers: {
+          "Content-Type": "multipart/form-data"
+        }
+      });
+
+      // Wait a moment to ensure file is written
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Process the data to match resume with job fields
+      const processedData = await axios.post(`${BACKEND_API}/processData`);
+
+      // Calculate ATS score - Include the job description from the formatted data
+      const atsResponse = await axios.post(`${BACKEND_API}/atsScore`, {
+        jobDescription: jobDescResponse.formattedDocsData
+      }, {
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+
+      // Redirect to results page with the processed data
+      router.push(`/results?data=${encodeURIComponent(JSON.stringify(atsResponse.data))}`);
+    } catch (error) {
+      console.error("Error processing job form:", error);
+      if (error.response) {
+        console.error("Error response data:", error.response.data);
+      }
+    } finally {
       setIsProcessing(false);
-    }, 3000);
+    }
   };
 
   const containerVariants = {
@@ -143,52 +174,66 @@ export default function JobFormSection() {
                   <p className="text-xs text-muted-foreground">Provide a Google Drive link to your resume</p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="job-description-file">Job Description PDF</Label>
-                  <div className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-6 text-center hover:bg-muted/50 transition-colors cursor-pointer">
-                    <Input
-                      type="file"
-                      id="job-description-file"
-                      className="hidden"
-                      accept=".pdf"
-                      onChange={handleFileChange}
+                {/* Toggle Switch */}
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="input-mode">Input Mode</Label>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-bold ${!isPdfMode ? 'text-primary' : 'text-muted-foreground'}`}>Text</span>
+                    <Switch
+                      id="input-mode"
+                      checked={isPdfMode}
+                      onCheckedChange={setIsPdfMode}
                     />
-                    <Label
-                      htmlFor="job-description-file"
-                      className="cursor-pointer flex flex-col items-center gap-2"
-                    >
-                      <FileText className="h-10 w-10 text-muted-foreground/70" />
-                      <span className="text-sm font-medium">
-                        {jobDescriptionFile ? jobDescriptionFile.name : "Click to upload or drag and drop"}
-                      </span>
-                      <span className="text-xs text-muted-foreground">PDF (Max 5MB)</span>
-                    </Label>
+                    <span className={`text-sm font-bold ${isPdfMode ? 'text-primary' : 'text-muted-foreground'}`}>PDF</span>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="job-description-text">Or Enter Job Description Manually</Label>
-                  <div className="flex gap-2">
-                    <Textarea
-                      id="job-description-text"
-                      placeholder="Paste the job description here..."
-                      className="min-h-[100px] flex-1"
-                      value={jobDescriptionText}
-                      onChange={(e) => setJobDescriptionText(e.target.value)}
-                    />
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={() => handleCopy(jobDescriptionText)}
-                      disabled={!jobDescriptionText.trim()}
-                    >
-                      <Clipboard className="h-4 w-4" />
-                    </Button>
+                {/* Conditional Rendering based on Toggle */}
+                {isPdfMode ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="job-description-file">Job Description PDF</Label>
+                    <div className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-6 text-center hover:bg-muted/50 transition-colors cursor-pointer">
+                      <Input
+                        type="file"
+                        id="job-description-file"
+                        className="hidden"
+                        accept=".pdf"
+                        onChange={handleFileChange}
+                      />
+                      <Label
+                        htmlFor="job-description-file"
+                        className="cursor-pointer flex flex-col items-center gap-2"
+                      >
+                        <FileText className="h-10 w-10 text-muted-foreground/70" />
+                        <span className="text-sm font-medium">
+                          {jobDescriptionFile ? jobDescriptionFile.name : "Click to upload or drag and drop"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">PDF (Max 5MB)</span>
+                      </Label>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Alternatively, paste the job description text directly
-                  </p>
-                </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="job-description-text">Job Description Text</Label>
+                    <div className="flex gap-2">
+                      <Textarea
+                        id="job-description-text"
+                        placeholder="Paste the job description here..."
+                        className="min-h-[100px] flex-1"
+                        value={jobDescriptionText}
+                        onChange={(e) => setJobDescriptionText(e.target.value)}
+                      />
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => handleCopy(jobDescriptionText)}
+                        disabled={!jobDescriptionText.trim()}
+                      >
+                        <Clipboard className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 <Button
                   onClick={handleProcess}
