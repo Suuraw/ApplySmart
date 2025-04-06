@@ -25,8 +25,8 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const isHomePage = pathname === "/";
-  const { isLoggedIn, user,logout } = useAuthContext();
-  const { theme} = useTheme();
+  const { isLoggedIn, user, logout } = useAuthContext();
+  const { theme } = useTheme();
   console.log("theme", theme);
   useEffect(() => {
     const handleScroll = () => {
@@ -127,9 +127,11 @@ export default function Navbar() {
               asChild
               variant="outline"
               size="sm"
-              className={`flex items-center gap-1 hover:bg-grey-700 hover:text-white ${theme!=='dark'&&'hover:text-primary'} transition-all duration-300`}
-              onClick={()=>logout()}
-           >
+              className={`flex items-center gap-1 hover:bg-grey-700 hover:text-white ${
+                theme !== "dark" && "hover:text-primary"
+              } transition-all duration-300`}
+              onClick={() => logout()}
+            >
               {isLoggedIn == false ? (
                 <Link href="/login">
                   <LogIn className="h-4 w-4 mr-1" />
@@ -138,13 +140,11 @@ export default function Navbar() {
               ) : (
                 <Link href="/">
                   <AnimatedTooltip id={1} name="Logout">
-                  <img
-                    src={user?.photo || avatar.src}
-                    alt="User Profile"
-                    className="h-7 w-7 mr-1 rounded-full"
-                    
-                  />
-                   
+                    <img
+                      src={user?.photo || avatar.src}
+                      alt="User Profile"
+                      className="h-7 w-7 mr-1 rounded-full"
+                    />
                   </AnimatedTooltip>
                 </Link>
               )}
@@ -202,8 +202,18 @@ export default function Navbar() {
                 className="text-foreground/80 hover:text-primary py-2 transition-colors flex items-center"
                 onClick={() => setIsMenuOpen(false)}
               >
-                <LogIn className="h-4 w-4" />
-                <span className="ml-2">Login / Signup</span>
+                {isLoggedIn == false ? (
+                  <>
+                    <LogIn className="h-4 w-4" />
+                    <span className="ml-2">Login / Signup</span>
+                  </>
+                ) : (
+                  <>
+                    <LogOut className="h-4 w-4" />
+                    <span className="ml-4">Logout</span>
+
+                  </>
+                )}
               </Link>
             </div>
           </motion.div>
