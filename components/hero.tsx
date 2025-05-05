@@ -14,6 +14,7 @@ export default function Hero() {
     const unsubscribe = auth.onAuthStateChanged(async(user) => {
       setIsVisible(true);
           if (user) {
+            console.log(user)
             await setIsLoggedIn(true);
             const idToken = await user.getIdToken();
             const userData={
