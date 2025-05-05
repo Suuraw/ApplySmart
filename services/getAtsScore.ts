@@ -1,17 +1,18 @@
-import axios from "axios";
+import { fileTemplate } from "./reqBodyTemplate";
 const BACKEND_API = process.env.NEXT_PUBLIC_BACKEND_API;
 export const uploadResume = async (resume: File) => {
   const formData = new FormData();
   formData.append("resume", resume);
   console.log(resume);
   try {
-    const response = await axios.post(`${BACKEND_API}/upload`, formData, {
+    console.log("loc",localStorage.getItem("token"));
+    const response = await fileTemplate.post(`${BACKEND_API}/uploadResume`, formData, {
       headers: {
-        "Content-Type": "multipart/form-data",
+        Authorization:`Bearer ${localStorage.getItem("token")}`
       },
     });
-    console.log(response.data.data);
-    return response.data.data;
+    console.log(response.data.text);
+    return response.data.text;
   } catch (error) {
     console.error("Error uploading resume:", error);
     throw error;

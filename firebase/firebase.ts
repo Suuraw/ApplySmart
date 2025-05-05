@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 dotenv.config();
 // import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
-// TODO: Add SDKs for Firebase products that you want to use
+// TODO : Add SDKs for Firebase products that you want to use
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API,
@@ -15,9 +15,9 @@ const firebaseConfig = {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
     measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
   };
-  console.log("hello",firebaseConfig);
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+
 export const auth = getAuth(app);
 export default app;

@@ -11,16 +11,32 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
-import { CheckCircle2, ArrowLeft, FileText, Send, Loader2, CheckCircle } from "lucide-react"
+import {
+  CheckCircle2,
+  ArrowLeft,
+  FileText,
+  Send,
+  Loader2,
+  CheckCircle,
+  Download,
+  FileDown,
+  FileType,
+  ChevronDown,
+} from "lucide-react"
 import Link from "next/link"
 import CopyButton from "@/components/copy-button"
 import MinimalFooter from "@/components/minimal-footer"
+import { jsPDF } from "jspdf"
+import { Document, Packer, Paragraph, HeadingLevel, AlignmentType } from "docx"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { motion } from "framer-motion"
 
 export default function JobApplicationPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isGeneratingFile, setIsGeneratingFile] = useState(false)
   const [formData, setFormData] = useState<Record<string, string>>({
     fullName: "John Smith",
     email: "john.smith@example.com",
@@ -48,10 +64,10 @@ export default function JobApplicationPage() {
 
   // Check if user is logged in
   useEffect(() => {
-    // const token = localStorage.getItem("auth-token")
-    // if (!token) {
-    //   router.push("/login")
-    // }
+    const token = localStorage.getItem("auth-token")
+    if (!token) {
+      router.push("/login")
+    }
   }, [router])
 
   // Simulate loading data from URL params or state
@@ -62,6 +78,27 @@ export default function JobApplicationPage() {
 
     // Set page title
     document.title = `Application for ${jobTitle} - ATS Optimizer`
+
+    // Simulate getting a cover letter from backend
+    setTimeout(() => {
+      const sampleCoverLetter = `Dear Hiring Manager,
+
+I am writing to express my interest in the Senior Project Manager position at ABC Company. With 8 years of experience in project management and a proven track record of delivering complex projects on time and within budget, I believe I am an excellent fit for this role.
+
+Throughout my career, I have developed strong skills in team leadership, strategic planning, and data analysis. I have successfully led cross-functional teams to achieve project goals and have consistently received recognition for my ability to manage stakeholder expectations effectively.
+
+I am particularly drawn to ABC Company because of its innovative approach to [specific company value or project]. I am confident that my experience in [relevant experience] would allow me to make significant contributions to your team.
+
+Thank you for considering my application. I look forward to the opportunity to discuss how my skills and experience align with your needs.
+
+Sincerely,
+John Smith`
+
+      setFormData((prev) => ({
+        ...prev,
+        coverLetter: sampleCoverLetter,
+      }))
+    }, 1000)
   }, [searchParams])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -78,6 +115,126 @@ export default function JobApplicationPage() {
       setIsSubmitting(false)
       setIsSubmitted(true)
     }, 2000)
+  }
+
+  // Function to generate and download PDF
+  const generatePDF = () => {
+    setIsGeneratingFile(true)
+
+    try {
+      const doc = new jsPDF()
+
+      // Add company letterhead
+      doc.setFontSize(24)
+      doc.setTextColor(128, 0, 128) // Purple color
+      doc.text("ATS Optimizer", 105, 20, { align: "center" })
+
+      // Add a line
+      doc.setDrawColor(128, 0, 128)
+      doc.setLineWidth(0.5)
+      doc.line(20, 25, 190, 25)
+
+      // Add date
+      doc.setFontSize(10)
+      doc.setTextColor(100, 100, 100)
+      doc.text(new Date().toLocaleDateString(), 20, 35)
+
+      // Add recipient
+      doc.setFontSize(12)
+      doc.setTextColor(0, 0, 0)
+      doc.text("Hiring Manager", 20, 45)
+      doc.text("ABC Company", 20, 52)
+
+      // Add cover letter content with proper formatting
+      doc.setFontSize(12)
+
+      // Split the cover letter into lines that fit the page width
+      const splitText = doc.splitTextToSize(formData.coverLetter, 170)
+      doc.text(splitText, 20, 65)
+
+      // Add signature
+      doc.text(`Sincerely,`, 20, doc.internal.pageSize.height - 40)
+      doc.text(`${formData.fullName}`, 20, doc.internal.pageSize.height - 30)
+      doc.text(`${formData.email} | ${formData.phone}`, 20, doc.internal.pageSize.height - 20)
+
+      // Save the PDF
+      doc.save(`Cover_Letter_${formData.fullName.replace(/\s+/g, "_")}.pdf`)
+    } catch (error) {
+      console.error("Error generating PDF:", error)
+      alert("There was an error generating your PDF. Please try again.")
+    } finally {
+      setIsGeneratingFile(false)
+    }
+  }
+
+  // Function to generate and download DOCX
+  const generateDOCX = async () => {
+    setIsGeneratingFile(true)
+
+    try {
+      // Create document
+      const doc = new Document({
+        sections: [
+          {
+            properties: {},
+            children: [
+              new Paragraph({
+                text: "ATS Optimizer",
+                heading: HeadingLevel.HEADING_1,
+                alignment: AlignmentType.CENTER,
+              }),
+              new Paragraph({
+                text: new Date().toLocaleDateString(),
+                alignment: AlignmentType.LEFT,
+              }),
+              new Paragraph({}), // Empty paragraph for spacing
+              new Paragraph({
+                text: "Hiring Manager",
+              }),
+              new Paragraph({
+                text: "ABC Company",
+              }),
+              new Paragraph({}), // Empty paragraph for spacing
+              ...formData.coverLetter.split("\n").map(
+                (line) =>
+                  new Paragraph({
+                    text: line,
+                  }),
+              ),
+              new Paragraph({}), // Empty paragraph for spacing
+              new Paragraph({
+                text: "Sincerely,",
+              }),
+              new Paragraph({
+                text: formData.fullName,
+              }),
+              new Paragraph({
+                text: `${formData.email} | ${formData.phone}`,
+              }),
+            ],
+          },
+        ],
+      })
+
+      // Generate and save document
+      const buffer = await Packer.toBuffer(doc)
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `Cover_Letter_${formData.fullName.replace(/\s+/g, "_")}.docx`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (error) {
+      console.error("Error generating DOCX:", error)
+      alert("There was an error generating your DOCX file. Please try again.")
+    } finally {
+      setIsGeneratingFile(false)
+    }
   }
 
   if (isSubmitted) {
@@ -248,7 +405,43 @@ export default function JobApplicationPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="coverLetter">Cover Letter</Label>
+                      <div className="flex justify-between items-center">
+                        <Label htmlFor="coverLetter">Cover Letter</Label>
+                        <div className="flex items-center gap-2">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1"
+                                disabled={!formData.coverLetter.trim() || isGeneratingFile}
+                              >
+                                {isGeneratingFile ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <FileDown className="h-4 w-4" />
+                                )}
+                                Download
+                                <ChevronDown className="h-3 w-3 opacity-50" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <motion.div whileHover={{ scale: 1.02 }}>
+                                <DropdownMenuItem onClick={generatePDF} className="cursor-pointer gap-2">
+                                  <FileText className="h-4 w-4" />
+                                  <span>Download as PDF</span>
+                                </DropdownMenuItem>
+                              </motion.div>
+                              <motion.div whileHover={{ scale: 1.02 }}>
+                                <DropdownMenuItem onClick={generateDOCX} className="cursor-pointer gap-2">
+                                  <FileType className="h-4 w-4" />
+                                  <span>Download as DOCX</span>
+                                </DropdownMenuItem>
+                              </motion.div>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
                       <div className="flex gap-2">
                         <Textarea
                           id="coverLetter"
@@ -256,11 +449,20 @@ export default function JobApplicationPage() {
                           value={formData.coverLetter}
                           onChange={handleInputChange}
                           placeholder="Write a brief cover letter or leave blank to auto-generate one based on your resume and the job description"
-                          className="min-h-[150px] flex-1"
+                          className="min-h-[250px] flex-1"
                         />
                         <div className="flex flex-col justify-start">
                           <CopyButton value={formData.coverLetter} />
                         </div>
+                      </div>
+                      <div className="flex justify-between items-center text-xs text-muted-foreground">
+                        <span>
+                          {formData.coverLetter ? `${formData.coverLetter.length} characters` : "No content yet"}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Download className="h-3 w-3" />
+                          Download options available
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -374,6 +576,39 @@ export default function JobApplicationPage() {
                       <span>Address how you plan to develop the missing skills</span>
                     </li>
                   </ul>
+                </div>
+
+                <div className="bg-primary/10 p-4 rounded-lg mt-4">
+                  <h3 className="font-medium mb-2 flex items-center gap-2">
+                    <Download className="h-4 w-4 text-primary" />
+                    Document Downloads
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Download your cover letter in your preferred format for your records or to submit with your
+                    application.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={generatePDF}
+                      disabled={!formData.coverLetter.trim() || isGeneratingFile}
+                      className="flex items-center gap-1"
+                    >
+                      <FileText className="h-3 w-3" />
+                      PDF
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={generateDOCX}
+                      disabled={!formData.coverLetter.trim() || isGeneratingFile}
+                      className="flex items-center gap-1"
+                    >
+                      <FileType className="h-3 w-3" />
+                      DOCX
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

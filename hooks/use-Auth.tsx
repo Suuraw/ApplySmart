@@ -1,4 +1,7 @@
 import * as React from "react";
+import { auth } from "@/firebase/firebase";
+import { signOut } from "firebase/auth";
+
 export interface UserType{
     email:string;
     name:string;
@@ -13,9 +16,15 @@ const useAuth=()=>{
         setUser(userData);
         setIsLoggedIn(true);
     }
-    const logout=()=>{
+    const logout=async()=>{
+        setLoading(true);
+        await signOut(auth); // Firebase: sign out user
+        localStorage.clear(); // Optional: clear all localStorage
+        sessionStorage.clear(); // Optional: clear all sessionStorage
         setUser(null);
         setIsLoggedIn(false);
+    
+        
     }
     return {isLoggedIn,user,login,logout,loading,setLoading,setIsLoggedIn,setUser};
 }

@@ -1,17 +1,33 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { motion } from "framer-motion"
-import { ArrowRight, FileText, CheckCircle, Zap } from "lucide-react"
-import Link from "next/link"
-import { useEffect, useState } from "react"
-
+import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
+import { ArrowRight, FileText, CheckCircle, Zap } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useAuthContext } from "@/hooks/authContext";
+import { auth } from "@/firebase/firebase";
 export default function Hero() {
-  const [isVisible, setIsVisible] = useState(false)
-
+  const [isVisible, setIsVisible] = useState(false);
+  const { setIsLoggedIn,login } = useAuthContext();
   useEffect(() => {
-    setIsVisible(true)
-  }, [])
+    const unsubscribe = auth.onAuthStateChanged(async(user) => {
+      setIsVisible(true);
+          if (user) {
+            await setIsLoggedIn(true);
+            const idToken = await user.getIdToken();
+            const userData={
+              email:user.email,
+              name:user.displayName,
+              photo:user.photoURL,
+              token:idToken,
+              provider:"google"
+            }
+           login(userData);
+          }
+        });
+      return () => unsubscribe();
+  }, []);
 
   return (
     <section className="pt-24 pb-12 md:pt-32 md:pb-24 overflow-hidden">
@@ -48,8 +64,9 @@ export default function Hero() {
               transition={{ duration: 0.5, delay: 0.5 }}
               className="text-lg text-muted-foreground max-w-xl"
             >
-              Our AI-powered tools analyze your resume against job descriptions, provide personalized suggestions, and
-              automate job application forms to save you time and increase your chances of success.
+              Our AI-powered tools analyze your resume against job descriptions,
+              provide personalized suggestions, and automate job application
+              forms to save you time and increase your chances of success.
             </motion.p>
             <motion.div
               initial={{ opacity: 0 }}
@@ -145,6 +162,5 @@ export default function Hero() {
         </div>
       </div>
     </section>
-  )
+  );
 }
-

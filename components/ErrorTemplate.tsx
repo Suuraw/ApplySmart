@@ -1,26 +1,43 @@
-import React from 'react';
-import { X } from 'lucide-react';
+import React from "react";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 
 interface ErrorPopupProps {
   message: string;
-  onClose: (isVisible: boolean) => void;
+  onClose: (visible: boolean) => void;
   isVisible: boolean;
 }
 
 const ErrorPopup: React.FC<ErrorPopupProps> = ({ message, onClose, isVisible }) => {
-  if (!isVisible) return null;
-
   return (
-    <div className="fixed top-16 right-4 flex items-center bg-white border border-red-400 text-red-700 px-4 py-3 rounded shadow-lg">
-      <span className="mr-2">{message}</span>
-      <button
-        onClick={()=>onClose(false)}
-        className="text-red-700 hover:text-red-900 transition-colors duration-200"
-        aria-label="Close error message"
-      >
-        <X size={20} />
-      </button>
-    </div>
+    isVisible && (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="bg-white p-6 rounded-lg shadow-lg max-w-sm mx-auto"
+        >
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold text-red-600">Error</h2>
+            <Button
+              variant="ghost"
+              onClick={() => onClose(false)}
+              className="text-red-600 hover:bg-transparent"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+          <p className="mt-4 text-red-600">{message}</p>
+          <div className="mt-6 text-right">
+            <Button variant="outline" onClick={() => onClose(false)}>
+              Close
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    )
   );
 };
 

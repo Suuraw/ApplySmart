@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,8 @@ import { auth } from "@/firebase/firebase";
 import { useRouter } from "next/navigation";
 import ErrorPopup from "@/components/ErrorTemplate";
 import { useAuthContext } from "@/hooks/authContext";
-import { profile } from "console";
+import authenticateUsers from "@/services/auth";
+import { Provider } from "@radix-ui/react-toast";
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
@@ -35,7 +36,18 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [showError, setShowError] = useState(false);
   const router = useRouter();
-  const {login} = useAuthContext();
+  const { login } = useAuthContext();
+  const authenticateUser = new authenticateUsers();
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        // User is signed in, redirect to home
+        router.push("/");
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -43,7 +55,7 @@ export default function LoginPage() {
     setTimeout(() => {
       setIsLoading(false);
       // Redirect or show success message
-      window.location.href = "/";
+      router.push("/");
     }, 1500);
   };
 
@@ -54,7 +66,7 @@ export default function LoginPage() {
     setTimeout(() => {
       setIsLoading(false);
       // Redirect or show success message
-      window.location.href = "/";
+      router.push("/");
     }, 1500);
   };
 
@@ -63,19 +75,27 @@ export default function LoginPage() {
       setIsLoading(true);
       const authProvider = await new GoogleAuthProvider();
       const result = await signInWithPopup(auth, authProvider);
-      const credentials = GoogleAuthProvider.credentialFromResult(result);
-      const token = credentials?.accessToken;
+      // const credentials = GoogleAuthProvider.credentialFromResult(result);
       const user = result.user;
+      const idToken = await user.getIdToken();
+
       console.log(user);
-      console.log(token);
-      const userData={
-        email:user.email,
-        name:user.displayName,
-        photo:user.photoURL,
-        token:token
-      }
+      const userData = {
+        email: user.email,
+        name: user.displayName,
+        photo: user.photoURL,
+        token: idToken,
+        provider: "google",
+      };
+      const endpoint = "login";
       login(userData);
-      router.push("/");
+      const responseData = await authenticateUser.loginFirebase(
+        userData,
+        endpoint
+      );
+      console.log("Backend data : ", responseData);
+      console.log(userData.photo);
+      router.replace("/");
     } catch (error) {
       setIsLoading(false);
       setErrorMessage("Error signing in with Google");
@@ -103,7 +123,13 @@ export default function LoginPage() {
 
   return (
     <>
-    {showError&&(<ErrorPopup message={errorMessage} onClose={setShowError} isVisible={showError}/>)}
+      {showError && (
+        <ErrorPopup
+          message={errorMessage}
+          onClose={setShowError}
+          isVisible={showError}
+        />
+      )}
       <div className="container mx-auto px-4 py-32 min-h-screen flex flex-col">
         <div className="flex-grow flex flex-col items-center justify-center relative">
           {/* Decorative elements */}

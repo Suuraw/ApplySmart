@@ -1,4 +1,5 @@
-"use client";
+"use client"; // Keep this directive since it's a client component
+
 import React, { useState, useEffect, useRef } from "react";
 import { motion, useAnimationControls } from "framer-motion";
 import { useTheme } from "next-themes";
@@ -17,11 +18,11 @@ const ATSScoreDashboard: React.FC<ATSScoreDashboardProps> = ({
   const [displayScore, setDisplayScore] = useState<number | null>(null);
   const controls = useAnimationControls();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const { resolvedTheme } = useTheme(); // Use resolvedTheme instead of theme
+  const { resolvedTheme, systemTheme } = useTheme(); // Access both resolved and system theme
+  const [mounted, setMounted] = useState(false); // Track if component is mounted on client
 
-  if (score || score === 0) {
-    score = Math.abs(score - 100);
-  }
+  // Ensure score is normalized
+  const normalizedScore = score || score === 0 ? Math.abs(score - 100) : undefined;
 
   const startAngle = 180;
   const endAngle = 0;
@@ -30,7 +31,14 @@ const ATSScoreDashboard: React.FC<ATSScoreDashboardProps> = ({
   const scoreToAngle = (score: number) =>
     startAngle - (score / maxScore) * angleRange;
 
+  // Handle initial mount to prevent SSR mismatch
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return; // Skip effect on server
+
     if (loading) {
       let isIncreasing = true;
       let currentPosition = 0;
@@ -56,14 +64,14 @@ const ATSScoreDashboard: React.FC<ATSScoreDashboardProps> = ({
       }, 100);
 
       setDisplayScore(null);
-    } else if (!loading && score !== undefined) {
+    } else if (!loading && normalizedScore !== undefined) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
 
       controls.start({
-        rotate: scoreToAngle(score),
+        rotate: scoreToAngle(normalizedScore),
         transition: { duration: 1, ease: "easeOut" },
       });
 
@@ -72,7 +80,7 @@ const ATSScoreDashboard: React.FC<ATSScoreDashboardProps> = ({
       const countUp = () => {
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        setDisplayScore(Math.floor(progress * score!));
+        setDisplayScore(Math.floor(progress * normalizedScore));
 
         if (progress < 1) {
           requestAnimationFrame(countUp);
@@ -85,9 +93,10 @@ const ATSScoreDashboard: React.FC<ATSScoreDashboardProps> = ({
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [loading, score, controls, maxScore]);
+  }, [loading, normalizedScore, controls, maxScore, mounted]);
 
-  const needleColor = resolvedTheme === "dark" ? "#ffffff" : "#1f2937";
+  // Default to light theme on server, update on client
+  const needleColor = mounted && resolvedTheme === "dark" ? "#ffffff" : "#1f2937";
 
   return (
     <div className="flex flex-col items-center justify-center w-full max-w-xs mx-auto">
@@ -134,14 +143,14 @@ const ATSScoreDashboard: React.FC<ATSScoreDashboardProps> = ({
                     y1={y1}
                     x2={x2}
                     y2={y2}
-                    stroke={needleColor}
+                    stroke={mounted && resolvedTheme === "dark" ? "#ffffff" : "#1f2937"}
                     strokeWidth="2"
                   />
                   <text
                     x={100 + 65 * Math.cos(rad)}
                     y={100 + 65 * Math.sin(rad)}
                     fontSize="10"
-                    fill={needleColor}
+                    fill={mounted && resolvedTheme === "dark" ? "#ffffff" : "#1f2937"}
                     textAnchor="middle"
                     dominantBaseline="middle"
                   >
@@ -151,7 +160,12 @@ const ATSScoreDashboard: React.FC<ATSScoreDashboardProps> = ({
               );
             })}
 
-            <circle cx="100" cy="100" r="8" fill={needleColor} />
+            <circle
+              cx="100"
+              cy="100"
+              r="8"
+              fill={mounted && resolvedTheme === "dark" ? "#ffffff" : "#1f2937"}
+            />
 
             <motion.line
               x1="50"
@@ -172,11 +186,11 @@ const ATSScoreDashboard: React.FC<ATSScoreDashboardProps> = ({
 
           <div className="absolute inset-0 flex flex-col items-center justify-end pb-4">
             <div className="text-4xl font-bold">
-              {displayScore == null
-                ? displayScore
-                : loading || score === 100
+              {displayScore == null || !mounted
                 ? "..."
-                : 100 - (score == undefined ? 0 : score)}
+                : loading || normalizedScore === 100
+                ? "..."
+                : 100 - (normalizedScore || 0)}
             </div>
             <div className="text-sm text-gray-500">ATS Score</div>
           </div>

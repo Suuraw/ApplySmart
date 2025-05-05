@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { flushSync } from "react-dom";
 import ATSScoreDashboard from "./ats-score-loader";
 import { useAuthContext } from "@/hooks/authContext";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 import {
   FileUp,
   Send,
@@ -51,7 +52,7 @@ export default function AtsScoreSection() {
   const chatContainerRef = useRef<HTMLDivElement>(null); // Ref for chat container
   const host = "http://localhost:5000";
   const streamUrl = `${host}/chat`;
-
+  const {error,clearError,handleError}=useErrorHandler();
   // State declarations
   const [file, setFile] = useState<File | null>(null);
   const [data, setData] = useState<ChatMessage[]>([]);
@@ -88,16 +89,15 @@ export default function AtsScoreSection() {
 
   // Handle file change
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    
-    if(!isLoggedIn) return;
+    if (!isLoggedIn) return;
     const selectedFile = e.target.files?.[0] ?? null;
     setFile(selectedFile);
   };
 
   // Handle resume upload
   const handleUpload = async () => {
-    console.log(isLoggedIn)
-    if (!file||!isLoggedIn) return;
+    console.log(isLoggedIn);
+    if (!file || !isLoggedIn) return;
 
     setIsAnalyzing(true);
     try {
@@ -127,8 +127,8 @@ export default function AtsScoreSection() {
           ],
         },
       ]);
-    } catch (error) {
-      console.error("Upload error:", error);
+    } catch (error:any) {
+      console.error("Upload error:", error.message);
     } finally {
       setIsAnalyzing(false);
       scrollToLatest(); // Scroll to latest after upload
@@ -353,13 +353,15 @@ export default function AtsScoreSection() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-6 text-center hover:bg-muted/50 transition-colors cursor-pointer">
-                  {isLoggedIn&&(<Input
-                    type="file"
-                    id="resume-upload"
-                    className="hidden"
-                    accept=".pdf,.doc,.docx"
-                    onChange={handleFileChange}
-                  />)}
+                  {isLoggedIn && (
+                    <Input
+                      type="file"
+                      id="resume-upload"
+                      className="hidden"
+                      accept=".pdf,.doc,.docx"
+                      onChange={handleFileChange}
+                    />
+                  )}
                   <Label
                     htmlFor="resume-upload"
                     className="cursor-pointer flex flex-col items-center gap-2"
@@ -382,7 +384,6 @@ export default function AtsScoreSection() {
                 </Button>
 
                 <ATSScoreDashboard score={score} loading={isAnalyzing} />
-
               </CardContent>
             </Card>
           </motion.div>

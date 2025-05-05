@@ -18,30 +18,61 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthContext } from "@/hooks/authContext";
-import avatar from "@/public/avatar.png";
 import { AnimatedTooltip } from "./ui/animatedToolTip";
+import { useRouter } from "next/navigation";
+import { auth } from "@/firebase/firebase";
+
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const pathname = usePathname();
   const isHomePage = pathname === "/";
-  const { isLoggedIn, user, logout } = useAuthContext();
+  const { isLoggedIn, user, logout, setIsLoggedIn, login } = useAuthContext();
   const { theme } = useTheme();
-  console.log("theme", theme);
+  const router = useRouter();
+
+  const navigation = (route: string) => {
+    if (route === "/logout") {
+      logout();
+      router.push("/login");
+      return;
+    }
+    router.push(route);
+  };
+  const toggleMenu = () => {
+    setIsMenuOpen((prev) => !prev);
+  };
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
     };
 
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        await setIsLoggedIn(true);
+        const idToken = await user.getIdToken();
+        const userData = {
+          email: user.email,
+          name: user.displayName,
+          photo: user.photoURL,
+          token: idToken,
+          provider: "google",
+        };
+        login(userData);
+      } else {
+        setIsLoggedIn(false);
+      }
+      setIsAuthLoading(false);
+    });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      unsubscribe();
+    };
   }, []);
-  console.log("Navbar", isLoggedIn);
-  console.log("User data", user);
-  console.log("UserPhoto", user?.photo);
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
 
   const navLinks = [
     ...(isHomePage
@@ -72,7 +103,7 @@ export default function Navbar() {
       )}
     >
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="text-2xl font-bold">
+        <button onClick={() => navigation("/")} className="text-2xl font-bold">
           <motion.span
             className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600"
             initial={{ opacity: 0, y: -10 }}
@@ -82,7 +113,7 @@ export default function Navbar() {
           >
             ATS Optimizer
           </motion.span>
-        </Link>
+        </button>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-6">
@@ -95,8 +126,8 @@ export default function Navbar() {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3, delay: 0.1 * (index + 1) }}
               >
-                <Link
-                  href={link.href}
+                <button
+                  onClick={() => navigation(link.href)}
                   className="text-foreground/80 hover:text-primary transition-colors flex items-center group"
                 >
                   <motion.span
@@ -112,44 +143,46 @@ export default function Navbar() {
                       transition={{ duration: 0.3 }}
                     />
                   </motion.span>
-                </Link>
+                </button>
               </motion.div>
             ))}
           </AnimatePresence>
 
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            whileHover={{ scale: 1.05 }}
-          >
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className={`flex items-center gap-1 hover:bg-grey-700 hover:text-white ${
-                theme !== "dark" && "hover:text-primary"
-              } transition-all duration-300`}
-              onClick={() => logout()}
+          {!isAuthLoading && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              whileHover={{ scale: 1.05 }}
             >
-              {isLoggedIn == false ? (
-                <Link href="/login">
-                  <LogIn className="h-4 w-4 mr-1" />
-                  Login / Signup
-                </Link>
-              ) : (
-                <Link href="/">
-                  <AnimatedTooltip id={1} name="Logout">
-                    <img
-                      src={user?.photo || avatar.src}
-                      alt="User Profile"
-                      className="h-7 w-7 mr-1 rounded-full"
-                    />
-                  </AnimatedTooltip>
-                </Link>
-              )}
-            </Button>
-          </motion.div>
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className={`flex items-center hover:cursor-pointer gap-1 hover:bg-grey-700 hover:text-white ${
+                  theme !== "dark" && "hover:text-primary"
+                } transition-all duration-300`}
+                onClick={() => navigation(isLoggedIn ? "/logout" : "/login")}
+              >
+                {isLoggedIn ? (
+                  <span>
+                    <AnimatedTooltip id={1} name="Logout">
+                      <img
+                        src={user?.photo}
+                        alt="User Profile"
+                        className="h-7 w-7 mr-1 rounded-full"
+                      />
+                    </AnimatedTooltip>
+                  </span>
+                ) : (
+                  <span>
+                    <LogIn className="h-4 w-4 mr-1" />
+                    Login / Signup
+                  </span>
+                )}
+              </Button>
+            </motion.div>
+          )}
 
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -197,24 +230,25 @@ export default function Navbar() {
                   <span className="ml-2">{link.name}</span>
                 </Link>
               ))}
-              <Link
-                href="/login"
-                className="text-foreground/80 hover:text-primary py-2 transition-colors flex items-center"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                {isLoggedIn == false ? (
-                  <>
-                    <LogIn className="h-4 w-4" />
-                    <span className="ml-2">Login / Signup</span>
-                  </>
-                ) : (
-                  <>
-                    <LogOut className="h-4 w-4" />
-                    <span className="ml-4">Logout</span>
-
-                  </>
-                )}
-              </Link>
+              {!isAuthLoading && (
+                <Link
+                  href={isLoggedIn ? "/logout" : "/login"}
+                  className="text-foreground/80 hover:text-primary py-2 transition-colors flex items-center"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {isLoggedIn ? (
+                    <>
+                      <LogOut className="h-4 w-4" />
+                      <span className="ml-4">Logout</span>
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="h-4 w-4" />
+                      <span className="ml-2">Login / Signup</span>
+                    </>
+                  )}
+                </Link>
+              )}
             </div>
           </motion.div>
         )}
