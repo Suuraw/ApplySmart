@@ -1,22 +1,17 @@
-import Hero from "@/components/hero"
-import AtsScoreSection from "@/components/ats-score-section"
-import JobFormSection from "@/components/job-form-section"
-import Footer from "@/components/footer"
-import AuthCheck from "@/components/auth-check"
+'use client'
+import dynamic from 'next/dynamic'
+import Hero from '@/components/hero'
+import Footer from '@/components/footer'
+const AtsScoreSection = dynamic(() => import('@/components/ats-score-section'), { ssr: false })
+const JobFormSection = dynamic(() => import('@/components/job-form-section'), { ssr: false })
 
 export default function Home() {
   return (
     <main className="min-h-screen">
       <Hero />
-      <AuthCheck>
-        <AtsScoreSection />
-      </AuthCheck>
-      <AuthCheck>
-        <JobFormSection />
-      </AuthCheck>
+      <AtsScoreSection />
+      <JobFormSection />
       <Footer />
     </main>
   )
 }
-
- 
