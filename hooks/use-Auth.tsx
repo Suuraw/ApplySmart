@@ -1,3 +1,4 @@
+"use client";
 import * as React from "react";
 import { auth } from "@/firebase/firebase";
 import { signOut } from "firebase/auth";
@@ -18,9 +19,9 @@ const useAuth=()=>{
     }
     const logout=async()=>{
         setLoading(true);
-        await signOut(auth); // Firebase: sign out user
-        localStorage.clear(); // Optional: clear all localStorage
-        sessionStorage.clear(); // Optional: clear all sessionStorage
+        await signOut(auth); 
+        localStorage.clear();
+        sessionStorage.clear(); 
         setUser(null);
         setIsLoggedIn(false);
     
