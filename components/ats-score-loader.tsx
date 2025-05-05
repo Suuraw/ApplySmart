@@ -177,8 +177,8 @@ const ATSScoreDashboard: React.FC<ATSScoreDashboardProps> = ({
               strokeLinecap="round"
               initial={{
                 rotate: scoreToAngle(120),
-                originX: "100px",
-                originY: "100px",
+                originX: 1,
+                originY: 1,
               }}
               animate={controls}
             />
