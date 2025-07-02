@@ -13,7 +13,7 @@ export default function Hero() {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async(user) => {
       setIsVisible(true);
-          if (user) {
+          if (user&&localStorage.getItem('token')) {
             console.log(user)
             await setIsLoggedIn(true);
             const idToken = await user.getIdToken();

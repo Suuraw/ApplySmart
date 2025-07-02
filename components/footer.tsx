@@ -1,6 +1,14 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Github, Twitter, Linkedin, Mail, FileText, CheckCircle, Zap } from "lucide-react"
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Github,
+  Twitter,
+  Linkedin,
+  Mail,
+  FileText,
+  CheckCircle,
+  Zap,
+} from "lucide-react";
 
 export default function Footer() {
   return (
@@ -10,11 +18,12 @@ export default function Footer() {
           <div className="md:col-span-1">
             <Link href="/" className="text-2xl font-bold">
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
-                ATS Optimizer
+                Resume Fix
               </span>
             </Link>
             <p className="mt-2 text-muted-foreground">
-              Optimize your resume for ATS systems and automate your job application process.
+              Optimize your resume for ATS systems and automate your job
+              application process.
             </p>
             <div className="flex gap-4 mt-4">
               <Button variant="ghost" size="icon" asChild>
@@ -44,22 +53,34 @@ export default function Footer() {
             <h3 className="font-medium text-lg mb-3">Features</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="#ats-score" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="#ats-score"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   ATS Score Analysis
                 </Link>
               </li>
               <li>
-                <Link href="#job-form" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="#job-form"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   Job Form Automation
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="#"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   Resume Improvement
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="#"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   Keyword Optimization
                 </Link>
               </li>
@@ -70,22 +91,34 @@ export default function Footer() {
             <h3 className="font-medium text-lg mb-3">Company</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="#about" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="#about"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   About Us
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="#"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   Pricing
                 </Link>
               </li>
               <li>
-                <Link href="#contact" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="#contact"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   Contact
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="#"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   Blog
                 </Link>
               </li>
@@ -96,17 +129,26 @@ export default function Footer() {
             <h3 className="font-medium text-lg mb-3">Legal</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="#"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="#"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   Terms of Service
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="#"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   Cookie Policy
                 </Link>
               </li>
@@ -135,6 +177,5 @@ export default function Footer() {
         </div>
       </div>
     </footer>
-  )
+  );
 }
-

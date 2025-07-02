@@ -48,10 +48,18 @@ export default function LoginPage() {
 
     return () => unsubscribe();
   }, [router]);
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     // Simulate API call
+    const userData = {
+      email: loginEmail,
+      password: loginPassword,
+      photo: "https://img.icons8.com/color/48/neko-boy.png",
+      provider: "local",
+    };
+
+    const response = await authenticateUser.localLogin(userData, "login");
     setTimeout(() => {
       setIsLoading(false);
       // Redirect or show success message
@@ -63,11 +71,6 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      // Redirect or show success message
-      router.push("/");
-    }, 1500);
   };
 
   const handleGoogleLogin = async () => {

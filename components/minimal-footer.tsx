@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Github, Twitter, Linkedin, Heart } from "lucide-react"
-import { motion } from "framer-motion"
+import Link from "next/link";
+import { Github, Twitter, Linkedin, Heart } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function MinimalFooter() {
   return (
@@ -17,7 +17,7 @@ export default function MinimalFooter() {
           <div className="flex items-center mb-4 md:mb-0">
             <Link href="/" className="text-lg font-bold">
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
-                ATS Optimizer
+                Resume Fix
               </span>
             </Link>
           </div>
@@ -60,6 +60,5 @@ export default function MinimalFooter() {
         </div>
       </div>
     </motion.footer>
-  )
+  );
 }
-

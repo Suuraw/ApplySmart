@@ -111,7 +111,7 @@ export default function Navbar() {
             transition={{ duration: 0.5 }}
             whileHover={{ scale: 1.05 }}
           >
-            ATS Optimizer
+            Resume Fix
           </motion.span>
         </button>
 

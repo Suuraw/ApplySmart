@@ -1,6 +1,6 @@
 import { fileTemplate } from "./reqBodyTemplate";
 const BACKEND_API = process.env.NEXT_PUBLIC_BACKEND_API;
-export const uploadResume = async (resume: File) => {
+export const  uploadResume = async (resume: File) => {
   const formData = new FormData();
   formData.append("resume", resume);
   console.log(resume);

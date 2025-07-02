@@ -1,49 +1,67 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { motion } from "framer-motion"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { ArrowLeft, Send, Loader2, Mail, Phone, MapPin, MessageSquare, CheckCircle, GraduationCap } from "lucide-react"
-import Link from "next/link"
-import MinimalFooter from "@/components/minimal-footer"
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  ArrowLeft,
+  Send,
+  Loader2,
+  Mail,
+  Phone,
+  MapPin,
+  MessageSquare,
+  CheckCircle,
+  GraduationCap,
+} from "lucide-react";
+import Link from "next/link";
+import MinimalFooter from "@/components/minimal-footer";
 
 export default function FeedbackPage() {
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     college: "",
     feedbackType: "general",
     message: "",
-  })
+  });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleRadioChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, feedbackType: value }))
-  }
+    setFormData((prev) => ({ ...prev, feedbackType: value }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
+    e.preventDefault();
+    setIsSubmitting(true);
 
     // Simulate API call
     setTimeout(() => {
-      setIsSubmitting(false)
-      setIsSubmitted(true)
-    }, 1500)
-  }
+      setIsSubmitting(false);
+      setIsSubmitted(true);
+    }, 1500);
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -53,7 +71,7 @@ export default function FeedbackPage() {
         staggerChildren: 0.1,
       },
     },
-  }
+  };
 
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
@@ -61,7 +79,7 @@ export default function FeedbackPage() {
       y: 0,
       opacity: 1,
     },
-  }
+  };
 
   if (isSubmitted) {
     return (
@@ -78,7 +96,8 @@ export default function FeedbackPage() {
             </div>
             <h1 className="text-3xl font-bold mb-4">Feedback Submitted!</h1>
             <p className="text-muted-foreground mb-8">
-              Thank you for your feedback. We appreciate your input and will get back to you soon if needed.
+              Thank you for your feedback. We appreciate your input and will get
+              back to you soon if needed.
             </p>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button
@@ -93,13 +112,18 @@ export default function FeedbackPage() {
 
         <MinimalFooter />
       </div>
-    )
+    );
   }
 
   return (
     <div className="container mx-auto px-4 py-32 min-h-screen flex flex-col">
       <div className="flex-grow">
-        <motion.div initial="hidden" animate="visible" variants={containerVariants} className="max-w-6xl mx-auto">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
+          className="max-w-6xl mx-auto"
+        >
           <motion.div variants={itemVariants} className="mb-8">
             <Button variant="ghost" asChild className="group">
               <Link href="/">
@@ -110,7 +134,10 @@ export default function FeedbackPage() {
           </motion.div>
 
           <motion.div variants={itemVariants} className="text-center mb-12">
-            <motion.div className="flex justify-center mb-6" variants={itemVariants}>
+            <motion.div
+              className="flex justify-center mb-6"
+              variants={itemVariants}
+            >
               <motion.div
                 className="bg-primary/10 p-3 rounded-full"
                 whileHover={{ scale: 1.05 }}
@@ -127,7 +154,8 @@ export default function FeedbackPage() {
               </span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Help us improve our service by sharing your thoughts, suggestions, or reporting issues
+              Help us improve our service by sharing your thoughts, suggestions,
+              or reporting issues
             </p>
           </motion.div>
 
@@ -144,7 +172,10 @@ export default function FeedbackPage() {
                     <MessageSquare className="h-5 w-5 text-primary" />
                     Send Us Your Feedback
                   </CardTitle>
-                  <CardDescription>Fill out the form below to share your experience or report an issue</CardDescription>
+                  <CardDescription>
+                    Fill out the form below to share your experience or report
+                    an issue
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleSubmit} className="space-y-6">
@@ -175,7 +206,9 @@ export default function FeedbackPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="college">College/University (Optional)</Label>
+                      <Label htmlFor="college">
+                        College/University (Optional)
+                      </Label>
                       <div className="flex items-center gap-2">
                         <Input
                           id="college"
@@ -187,7 +220,9 @@ export default function FeedbackPage() {
                         />
                         <GraduationCap className="h-5 w-5 text-muted-foreground" />
                       </div>
-                      <p className="text-xs text-primary">💡 Let us know your college for student-specific offers!</p>
+                      <p className="text-xs text-primary">
+                        💡 Let us know your college for student-specific offers!
+                      </p>
                     </div>
 
                     <div className="space-y-2">
@@ -205,7 +240,10 @@ export default function FeedbackPage() {
                         </div>
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="suggestion" id="suggestion" />
-                          <Label htmlFor="suggestion" className="cursor-pointer">
+                          <Label
+                            htmlFor="suggestion"
+                            className="cursor-pointer"
+                          >
                             Feature Suggestion
                           </Label>
                         </div>
@@ -237,7 +275,10 @@ export default function FeedbackPage() {
                       />
                     </div>
 
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
                       <Button
                         type="submit"
                         className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
@@ -273,15 +314,21 @@ export default function FeedbackPage() {
                     <Mail className="h-5 w-5 text-primary" />
                     Contact Information
                   </CardTitle>
-                  <CardDescription>Reach out to us directly through these channels</CardDescription>
+                  <CardDescription>
+                    Reach out to us directly through these channels
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex items-start gap-3">
                     <Mail className="h-5 w-5 text-primary mt-0.5" />
                     <div>
                       <h3 className="font-medium">Email</h3>
-                      <p className="text-muted-foreground">support@atsoptimizer.com</p>
-                      <p className="text-sm text-muted-foreground">We'll respond within 24 hours</p>
+                      <p className="text-muted-foreground">
+                        support@atsoptimizer.com
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        We'll respond within 24 hours
+                      </p>
                     </div>
                   </div>
 
@@ -289,8 +336,10 @@ export default function FeedbackPage() {
                     <Phone className="h-5 w-5 text-primary mt-0.5" />
                     <div>
                       <h3 className="font-medium">Phone</h3>
-                      <p className="text-muted-foreground">+91 98765 43210</p>
-                      <p className="text-sm text-muted-foreground">Mon-Fri, 9:00 AM - 6:00 PM IST</p>
+                      <p className="text-muted-foreground">+91 ...</p>
+                      <p className="text-sm text-muted-foreground">
+                        Mon-Fri, 9:00 AM - 6:00 PM IST
+                      </p>
                     </div>
                   </div>
 
@@ -299,8 +348,8 @@ export default function FeedbackPage() {
                     <div>
                       <h3 className="font-medium">Office</h3>
                       <p className="text-muted-foreground">
-                        123 Tech Park, Sector 5<br />
-                        Bangalore, Karnataka 560001
+                        123 Tech FUNK
+                        <br />
                         <br />
                         India
                       </p>
@@ -317,8 +366,9 @@ export default function FeedbackPage() {
                       Student Support
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Are you a student or part of a college organization? Mention your institution for priority support
-                      and special offers!
+                      Are you a student or part of a college organization?
+                      Mention your institution for priority support and special
+                      offers!
                     </p>
                   </motion.div>
                 </CardContent>
@@ -330,6 +380,5 @@ export default function FeedbackPage() {
 
       <MinimalFooter />
     </div>
-  )
+  );
 }
-
